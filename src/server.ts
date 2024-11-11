@@ -2,6 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import customerRoutes from './routes/customer.routes';
+import userRoutes from './routes/user.routes';
+
+
 
 dotenv.config();
 
@@ -27,6 +30,8 @@ app.use(express.json());
 
 // Routes
 app.use('/api/customers', customerRoutes);
+app.use('/api/auth', userRoutes);
+
 
 // Start the server
 app.listen(PORT, () => {
