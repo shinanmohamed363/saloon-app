@@ -25,6 +25,7 @@ export const staffZodSchema = z.object({
 
 export interface Staff extends Document {
   employeeID: string;
+  created_by:string;
   name: string;
   role: string;
   workLocation: string;
@@ -42,6 +43,7 @@ const staffSchema: Schema = new Schema(
   {
     employeeID: { type: String, required: true, unique: true },
     name: { type: String, required: true },
+    created_by: { type: String, required: true },
     role: { type: String },
     workLocation: { type: String },
     salary: { type: Number },

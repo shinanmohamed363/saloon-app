@@ -6,55 +6,59 @@ import Staff from '../models/staff.model';
 import mongoose from 'mongoose';
 
 export const createStaff = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const {
-      name, email, password, role, workLocation, salary, phone, availability,
-      experience, specialization, hireDate, performanceRating,
-    } = req.body;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const userID = `staff-${uuidv4()}`;
-
-    const newUser = new User({
-      userID,
-      name,
-      email,
-      password: hashedPassword,
-      role: 'Staff', // Set role as "Staff"
-    });
-
-    await newUser.save({ session });
-
-    const newStaff = new Staff({
-      employeeID: newUser.userID,
-      name,
-      role,
-      workLocation,
-      salary,
-      phone,
-      email,
-      availability,
-      experience,
-      specialization,
-      hireDate,
-      performanceRating,
-    });
-
-    await newStaff.save({ session });
-    await session.commitTransaction();
-
-    res.status(201).json({ data: { staff: newStaff, user: newUser } });
-  } catch (error) {
-    await session.abortTransaction();
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    res.status(500).json({ errors: [{ message: errorMessage }] });
-  } finally {
-    session.endSession();
-  }
-};
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const {
+        name, email, password, role, workLocation, salary, phone, availability,
+        experience, specialization, hireDate, performanceRating,
+      } = req.body;
+  
+      
+      const user = (req as any).user as { userID: string };
+      const createdBy = user.userID;
+  
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const userID = `staff-${uuidv4()}`;
+  
+      const newUser = new User({
+        userID,
+        name,
+        email,
+        password: hashedPassword,
+        role: 'Staff', 
+      });
+  
+      await newUser.save({ session });
+  
+      const newStaff = new Staff({
+        employeeID: newUser.userID,
+        name,
+        created_by: createdBy, 
+        role,
+        workLocation,
+        salary,
+        phone,
+        email,
+        availability,
+        experience,
+        specialization,
+        hireDate,
+        performanceRating,
+      });
+  
+      await newStaff.save({ session });
+      await session.commitTransaction();
+  
+      res.status(201).json({ data: { staff: newStaff, user: newUser } });
+    } catch (error) {
+      await session.abortTransaction();
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      res.status(500).json({ errors: [{ message: errorMessage }] });
+    } finally {
+      session.endSession();
+    }
+  };
 
   export const updateStaff = async (req: Request, res: Response) => {
     const session = await mongoose.startSession();
@@ -179,5 +183,6 @@ export const getStaffByWorkLocation = async (req: Request, res: Response): Promi
     res.status(500).json({ error: 'An error occurred while fetching the staff members.' });
   }
 };
+
 
 

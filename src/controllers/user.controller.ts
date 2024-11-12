@@ -53,7 +53,7 @@ export const loginuser = async (req: Request, res: Response): Promise<void> => {
         }
         const token = jwt.sign(
             {
-                userId: foundUser.id,
+                userID: foundUser.userID,
                 userRole: foundUser.role,
                 email: foundUser.email,
             },
