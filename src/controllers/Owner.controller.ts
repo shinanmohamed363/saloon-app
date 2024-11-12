@@ -3,7 +3,9 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid'; 
 import Owner from '../models/owner.model';
 import User from '../models/user.model';
+import Staff from '../models/staff.model';
 import mongoose from 'mongoose';
+
 
 export const createOwner = async (req: Request, res: Response) => {
   const session = await mongoose.startSession(); 
@@ -142,3 +144,93 @@ export const getOwnerByUserID = async (req: Request, res: Response): Promise<voi
     }
 };
 
+export const checkBeforeDeleteAccount = async (req: Request, res: Response): Promise<void> => {
+    const { userID } = req.params;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        // Step 1: Check if any staff exist under this owner's userID (created_by field)
+        const staff = await Staff.findOne({ created_by: userID });
+        
+        if (staff) {
+            // If staff exists, return a message that deletion can't proceed
+            res.status(400).json({
+                message: 'You cannot delete this owner account because there are staff members under your ownership.'
+            });
+            return;
+        }
+
+        // Step 2: No staff found, proceed with deletion of Owner and User
+        // Delete the Owner document
+        const deletedOwner = await Owner.findOneAndDelete({ ownerID: userID }, { session });
+        if (!deletedOwner) {
+            res.status(404).json({ error: 'Owner not found' });
+            await session.abortTransaction();
+            return;
+        }
+
+        // Delete the associated User document
+        const deletedUser = await User.findOneAndDelete({ userID }, { session });
+        if (!deletedUser) {
+            res.status(404).json({ error: 'User not found' });
+            await session.abortTransaction();
+            return;
+        }
+
+        // Step 3: Commit the transaction to ensure atomicity
+        await session.commitTransaction();
+        res.status(200).json({ message: 'Owner and associated user successfully deleted.' });
+
+    } catch (error) {
+        // Abort the transaction if any error occurs
+        await session.abortTransaction();
+        res.status(500).json({ error: 'An error occurred while deleting the owner and user.' });
+    } finally {
+        // End the session regardless of success or failure
+        session.endSession();
+    }
+};
+
+export const forceDeleteOwnerAccount = async (req: Request, res: Response): Promise<void> => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { userID } = req.params;
+
+        // Step 1: Delete all staff associated with this owner (created_by = userID)
+        const deletedStaff = await Staff.deleteMany({ created_by: userID }, { session });
+        if (deletedStaff.deletedCount === 0) {
+            res.status(404).json({ error: 'No staff found under this owner.' });
+            await session.abortTransaction();
+            return;
+        }
+
+        // Step 2: Delete the Owner document
+        const deletedOwner = await Owner.findOneAndDelete({ ownerID: userID }, { session });
+        if (!deletedOwner) {
+            res.status(404).json({ error: 'Owner not found.' });
+            await session.abortTransaction();
+            return;
+        }
+
+        // Step 3: Delete the associated User document
+        const deletedUser = await User.findOneAndDelete({ userID }, { session });
+        if (!deletedUser) {
+            res.status(404).json({ error: 'User not found.' });
+            await session.abortTransaction();
+            return;
+        }
+
+        // Commit the transaction if everything goes well
+        await session.commitTransaction();
+        res.status(200).json({ message: 'Owner, associated staff, and user successfully deleted.' });
+    } catch (error) {
+        await session.abortTransaction();
+        res.status(500).json({ error: 'An error occurred during the deletion process.' });
+    } finally {
+        session.endSession();
+    }
+};

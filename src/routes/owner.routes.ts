@@ -11,5 +11,7 @@ router.post('/register' ,validateSchema(ownerZodSchema), OwnerController.createO
 router.put('/update/:userID',verifyToken,validateSchema(ownerZodSchema),OwnerController.updateOwnerByUserID);
 router.delete('/:userID',verifyToken ,OwnerController.deleteOwnerByUserID);
 router.get('/:userID', verifyToken, OwnerController.getOwnerByUserID);
+router.delete('/delete-owner/:userID',verifyToken,OwnerController. checkBeforeDeleteAccount);
+router.delete('/force-delete/:userID',verifyToken, OwnerController.forceDeleteOwnerAccount);
 
 export default router;
