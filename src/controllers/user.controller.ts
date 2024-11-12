@@ -1,28 +1,39 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import user, { Iuser } from '../models/user.model';
+import user, { IUser } from '../models/user.model';
 import jwt from 'jsonwebtoken';
 
 export const createuser = async (req: Request, res: Response) => {
-    try {
-        const { name, email, password } = req.body;
-        const hashpassword = await bcrypt.hash(password, 10);
+  try {
+    const { name, email, password, role } = req.body;
 
-        const newuser: Iuser = new user({
-            name,
-            email,
-            password: hashpassword,
-        });
+    // Hash the password
+    const hashPassword = await bcrypt.hash(password, 10);
 
-        await newuser.save();
-        res.status(201).json(newuser);
-    } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message });
-        } else {
-            res.status(500).json({ message: 'An unknown error occurred.' });
-        }
+    // Manually generate userID based on the role or default to 'user'
+    const userID = `${role ? role.toLowerCase() : 'user'}${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+
+    // Create a new user instance with the manually generated userID
+    const newUser: IUser = new user({
+      userID,  // Assign the generated userID
+      name,
+      email,
+      password: hashPassword,
+      role: role || 'Customer', // Default to 'Customer' if no role is provided
+    });
+
+    // Save the new user
+    await newUser.save();
+
+    // Return the response with the newly created user
+    res.status(201).json(newUser);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred.' });
     }
+  }
 };
 
 export const loginuser = async (req: Request, res: Response): Promise<void> => {
@@ -49,7 +60,6 @@ export const loginuser = async (req: Request, res: Response): Promise<void> => {
             'your-secret',  // Make sure 'your-secret' is your actual secret key used for signing JWTs
             { expiresIn: '30d' }
         );
-
         res.status(200).json({
             message: 'Login successful',
             user: {
