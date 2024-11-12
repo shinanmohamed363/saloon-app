@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import customerRoutes from './routes/customer.routes';
 import userRoutes from './routes/user.routes';
 import ownerRoutes from './routes/owner.routes';
-
+import staffRoutes from './routes/staff.routes'
 
 dotenv.config();
 
@@ -31,8 +31,8 @@ app.use(express.json());
 // Routes
 app.use('/api/customers', customerRoutes);
 app.use('/api/auth', userRoutes);
-app.use('/api/owner',ownerRoutes)
-
+app.use('/api/owner',ownerRoutes);
+app.use('/api/staff',staffRoutes);
 
 // Start the server
 app.listen(PORT, () => {

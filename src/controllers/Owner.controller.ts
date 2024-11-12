@@ -100,9 +100,9 @@ export const deleteOwnerByUserID = async (req: Request, res: Response): Promise<
       const deletedUser = await User.findOneAndDelete({ userID }, { session });
       if (!deletedUser) {
         res.status(404).json({ error: 'User not found' });
-        await session.abortTransaction();
-        return;
-      }
+        await session.abortTransaction();  
+        return;                           
+      }                                   
   
       // Find and delete the Owner document
       const deletedOwner = await Owner.findOneAndDelete({ ownerID: userID }, { session });
