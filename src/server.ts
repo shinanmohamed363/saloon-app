@@ -6,10 +6,11 @@ import userRoutes from './routes/user.routes';
 import ownerRoutes from './routes/owner.routes';
 import staffRoutes from './routes/staff.routes';
 import salonRoutes from './routes/salon.routes';
-
+import barberRoutes from './routes/barber.routes';
+import scheduleRoutes from './routes/schedule.routes';
 dotenv.config();
 
-const app = express();
+const app = express();  
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
@@ -33,7 +34,9 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/auth', userRoutes);
 app.use('/api/owner',ownerRoutes);
 app.use('/api/staff',staffRoutes);
-app.use('/api/salon',salonRoutes)
+app.use('/api/salon',salonRoutes);
+app.use('/api/barber',barberRoutes);
+app.use('/api/schedule',scheduleRoutes);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

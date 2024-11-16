@@ -9,7 +9,7 @@ const router = express.Router();
 
 // Protect the register route with verifyToken middleware
 router.post('/register',  validateSchema(userZodSchema), userController.createuser);
-router.post('/login', userController.loginuser);
+router.post('/login' ,userController.loginuser);
 
 
 export default router;
