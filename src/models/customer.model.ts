@@ -1,15 +1,27 @@
+// src/models/customer.model.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { z } from 'zod';
 
+// Zod schema for validating request data
+export const customerZodSchema = z.object({
+  name: z.string().min(1, { message: 'Name is required' }),
+  email: z.string().email({ message: 'Invalid email format' }),
+  // Add more fields as necessary
+});
+
+// Mongoose schema for defining the MongoDB collection structure
 export interface ICustomer extends Document {
   name: string;
   email: string;
-  // add more fields as needed
+  // Add more fields if necessary
 }
 
 const customerSchema: Schema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  // add more fields as needed
+  // Add more fields if necessary
 });
 
-export default mongoose.model<ICustomer>('Customer', customerSchema);
+const Customer = mongoose.model<ICustomer>('Customer', customerSchema);
+
+export default Customer;
