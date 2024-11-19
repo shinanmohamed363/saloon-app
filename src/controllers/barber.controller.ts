@@ -70,10 +70,8 @@ export const calculateAvailability = async (req: Request, res: Response): Promis
     const { averageMinutesPerCustomer, breaks, locations, durationInDays, holidays }: AvailabilityRequest = req.body;
 
     try {
-        // Process each location to calculate its schedule
         const locationSchedules = await Promise.all(
-            locations.map(async (location: string) => { // Define 'location' as a string
-                // Fetch salon for this location
+            locations.map(async (location: string) => {
                 const salon = await Salon.findOne({ location });
                 if (!salon || !salon.openingHours) {
                     return {
@@ -83,7 +81,7 @@ export const calculateAvailability = async (req: Request, res: Response): Promis
                     };
                 }
 
-                const schedule: any[] = []; // Define schedule as an array
+                const schedule: any[] = [];
 
                 for (let i = 0; i < durationInDays; i++) {
                     const currentDate = new Date();
@@ -91,48 +89,40 @@ export const calculateAvailability = async (req: Request, res: Response): Promis
                     const dateStr = currentDate.toISOString().split('T')[0];
                     const dayName = currentDate.toLocaleDateString('en-EN', { weekday: 'long' });
 
-                    // Check if the current date is a holiday for this location
-                    const holiday = holidays.find((h: Holiday) => 
-                        h.date === dateStr && h.locations.includes(location)
+                    const holiday = holidays.find(
+                        (h: Holiday) => h.date === dateStr && h.locations.includes(location)
                     );
+
                     if (holiday) {
                         schedule.push({
                             date: dateStr,
                             holiday: {
                                 reason: holiday.reason,
                             },
-                            slots: [],
                         });
                         continue;
                     }
 
-                    // Find opening hours for the current day
-                    const dayHours = salon.openingHours.find((hour: any) => hour.day === dayName); // 'hour' is of type 'any'
+                    const dayHours = salon.openingHours.find((hour: any) => hour.day === dayName);
                     if (!dayHours) {
-                        schedule.push({ date: dateStr, slots: [] });
                         continue;
                     }
 
                     const openingTime = parseTime(dayHours.from);
                     const closingTime = parseTime(dayHours.to);
+                    if (!openingTime || !closingTime) continue;
 
-                    if (!openingTime || !closingTime) {
-                        schedule.push({ date: dateStr, slots: [] });
-                        continue;
-                    }
-
-                    const slots: any[] = []; // Define slots as an array
-                    let currentTime: Date = openingTime;
+                    const slots: any[] = [];
+                    let currentTime = openingTime;
 
                     while (currentTime < closingTime) {
-                        const nextSlotEnd: Date = new Date(
+                        const nextSlotEnd = new Date(
                             currentTime.getTime() + averageMinutesPerCustomer * 60 * 1000
                         );
 
                         if (nextSlotEnd > closingTime) break;
 
-                        // Check for overlapping breaks
-                        const overlappingBreak = breaks.find((brk: Break) => { // 'brk' is of type 'Break'
+                        const overlappingBreak = breaks.find((brk: Break) => {
                             const breakStart = parseTime(brk.start);
                             const breakEnd = parseTime(brk.end);
                             return breakStart && breakEnd && currentTime < breakEnd && nextSlotEnd > breakStart;
@@ -149,7 +139,7 @@ export const calculateAvailability = async (req: Request, res: Response): Promis
                                     isBreak: true,
                                 });
                             }
-                            currentTime = breakEnd as Date; // Move current time to the end of the break
+                            currentTime = breakEnd!;
                         } else {
                             slots.push({
                                 start: formatTime(currentTime),
@@ -162,25 +152,20 @@ export const calculateAvailability = async (req: Request, res: Response): Promis
 
                     schedule.push({
                         date: dateStr,
-                        slots,
+                        ...(slots.length > 0 ? { slots } : {}), // Include slots only if not empty
                     });
                 }
 
-                return {
-                    location,
-                    schedule,
-                };
+                return { location, schedule };
             })
         );
 
-        // Group locations with identical schedules
         const groupedSchedules = groupBySchedule(locationSchedules);
 
-        res.status(200).json({  
+        res.status(200).json({
             request: req.body,
             response: groupedSchedules,
         });
-
     } catch (error) {
         console.error('Error calculating availability:', error);
         res.status(500).json({ error: 'An error occurred while calculating availability' });

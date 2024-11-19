@@ -8,5 +8,5 @@ const router = express.Router();
 
 // Protect the register route with verifyToken middleware
 router.post('/createschedule',verifyToken, availabilityController.saveAvailabilityController);
-router.put('/updateschedule',verifyToken, availabilityController.updateAvailability );
+router.put('/updateschedule',verifyToken, availabilityController.updateAvailability );// this will work exsisting shedule delete and new shedule will be added
 export default router;

@@ -41,3 +41,4 @@ app.use('/api/schedule',scheduleRoutes);
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+

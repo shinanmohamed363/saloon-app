@@ -1,11 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { start } from 'repl';
 import { z } from 'zod';
 
 // Zod validation schema 
 export const barberZodSchema = z.object({
     availability: z.array(
         z.object({
-            time: z.string().regex(/^([0-9]{2}):([0-9]{2})$/, "Invalid time format, use HH:mm"),
+            start_time: z.string().regex(/^([0-9]{2}):([0-9]{2})$/, "Invalid time format, use HH:mm"),
+            end_time: z.string().regex(/^([0-9]{2}):([0-9]{2})$/, "Invalid time format, use HH:mm"),
             date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format, use YYYY-MM-DD"),
             taskName: z.array(z.string()).nonempty("Task name is required"),
             reservedStatus: z.enum(["booked", "completed", "in_progress", "canceled"]),
@@ -21,20 +23,23 @@ export const barberZodSchema = z.object({
     tips: z.array(z.string()).optional(),
 });
 
-// TypeScript interface for Barber based on Mongoose Document
+// TypeScript interface for Barber
 export interface Barber extends Document {
     barberID: string;
     employeeID: string;
-    salonID: string;
+    salonID: mongoose.Schema.Types.ObjectId;
     createdBy: string;
-    availability: {
-        time: string;
+    availability?: {
         date: string;
-        taskName: string[];
-        reservedStatus: string;
-        appointmentID?: string;
-        rating?: number;
-        tips?: string[];
+        entries: {
+            start_time: string;
+            end_time: string;
+            taskName: string[];
+            reservedStatus: "booked" | "completed" | "in_progress" | "canceled" | "available";
+            appointmentID?: string;
+            rating?: number;
+            tips?: string[];
+        }[];
     }[];
     rating: number;
     name: string;
@@ -47,30 +52,36 @@ export interface Barber extends Document {
 const barberSchema: Schema = new Schema(
     {
         barberID: { type: String, required: true, unique: true },
-        employeeID: { type: String, ref: 'Staff' },
-        salonID: { type: String, ref: 'Salon' },
-        createdBy: { type: String, required: true },  // New field for tracking who created the barber entry
+        employeeID: { type: String, ref: 'Staff', required: true },
+        salonID: { type: String, ref: 'Salon'},
+        createdBy: { type: String, required: true },
         availability: [
             {
-                time: { type: String,  },
-                date: { type: String,  },
-                taskName: [{ type: String,  }],
-                reservedStatus: { type: String, enum: ["booked", "completed", "in_progress", "canceled"]},
-                appointmentID: { type: String },
-                rating: { type: Number },
-                tips: [{ type: String }],
-            }
+                date: { type: String, required: true },
+                entries: [
+                    {
+                        start_time: { type: String, required: true },
+                        end_time: { type: String, required: true },
+                        taskName: [{ type: String }],
+                        reservedStatus: {
+                            type: String,
+                            enum: ["booked", "completed", "in_progress", "canceled", "available"],
+                        },
+                        appointmentID: { type: String },
+                        rating: { type: Number, min: 0, max: 5 },
+                        tips: [{ type: String }],
+                    },
+                ],
+            },
         ],
-        rating: { type: Number },
-        name: { type: String, },
+        rating: { type: Number, default: 0, min: 0, max: 5 },
+        name: { type: String, required: true },
         notes: { type: String },
-        activeStatus: { type: Boolean},
+        activeStatus: { type: Boolean, default: true },
         tips: [{ type: String }],
     },
     { timestamps: true }
 );
 
-// Mongoose model for Barber
 const Barber = mongoose.model<Barber>('Barber', barberSchema);
-
 export default Barber;

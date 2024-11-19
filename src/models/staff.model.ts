@@ -42,6 +42,7 @@ export interface Staff extends Document {
 const staffSchema: Schema = new Schema(
   {
     employeeID: { type: String, required: true, unique: true },
+   
     name: { type: String, required: true },
     created_by: { type: String, required: true },
     role: { type: String },
